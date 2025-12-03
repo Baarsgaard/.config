@@ -16,3 +16,7 @@ ln -s "$HOME/projects/dotconfig/home-manager/home.nix" "$HOME/.config/home-manag
 
 home-manager switch
 ```
+
+- `echo "$HOME/.nix-profile/bin/zsh" >>/etc/shells`
+- `chsh -s "$HOME/.nix-profile/bin/zsh"`
+- Install docker/podman manually as needed
