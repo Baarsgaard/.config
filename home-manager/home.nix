@@ -14,6 +14,7 @@
     pkgs.dive
     pkgs.gcc
     pkgs.gh
+    pkgs.gnumake
     pkgs.jq
     pkgs.kind
     pkgs.ko
@@ -392,6 +393,7 @@ bind-key -T copy-mode-vi y send -X copy-pipe-and-cancel 'clip.exe'
     extraPackages = [
       pkgs.bash-language-server
       pkgs.dockerfile-language-server
+      pkgs.golangci-lint
       pkgs.golangci-lint-langserver
       pkgs.gopls
       pkgs.helm-ls
