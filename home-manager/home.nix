@@ -1,6 +1,10 @@
 { config, pkgs, ... }:
 
 {
+  # Enable management of nix and experimental features
+  # nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  # nix.package = pkgs.nix;
+
   home.stateVersion = "25.11"; # Do not touch
 
   home.username = "ste";
