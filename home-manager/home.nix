@@ -125,7 +125,7 @@
     enable = true;
 
     initContent = ''
-      PROMPT="%{$fg[cyan]%}%c%{$reset_color%} "'$(git_prompt_info)'"%(?:%{$fg[green]%}:%{$fg[red]%})> %{$reset_color%}"
+      PROMPT="%{$fg[cyan]%}%c "%{$fg[red]%}'$(git_current_branch)'"%(?:%{$fg[green]%}:%{$fg[red]%})> %{$reset_color%}"
       source ${pkgs.zsh-fzf-tab}/share/fzf-tab/fzf-tab.plugin.zsh
     '';
     history = {
