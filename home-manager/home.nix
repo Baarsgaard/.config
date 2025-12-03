@@ -11,11 +11,8 @@
   home.homeDirectory = "/home/${config.home.username}";
 
   home.packages = [
-    pkgs.containerd
     pkgs.dive
-    pkgs.docker
-    pkgs.docker-buildx
-    pkgs.docker-compose
+    pkgs.gcc
     pkgs.gh
     pkgs.jq
     pkgs.kind
@@ -75,12 +72,12 @@
   # Let Home Manager install and manage itself.
   programs = {
     home-manager.enable = true;
-    bun.enable = true;
-    fd.enable = true;
-    ripgrep.enable = true;
     bat.enable = true;
-    go.enable = true;
+    bun.enable = true;
     cargo.enable = false;
+    fd.enable = true;
+    go.enable = true;
+    ripgrep.enable = true;
   };
 
   programs.ssh = {
