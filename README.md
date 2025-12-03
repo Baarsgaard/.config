@@ -7,12 +7,12 @@ Mostly dotfiles and hacky scripts
 
 ```bash
 # Clone .config repo
-mkdir ~/projects
-cd ~/projects
+mkdir "$HOME/projects"
+cd "$HOME/projects"
 git clone git@github.com:Baarsgaard/.config.git dotconfig
 
-mv ~/.config/home-manager/home.nix ~/.config/home-manager/home.nix.bak
-ln -s /home/$USER/projects/dotconfig/home-manager/home.nix /home/$USER/.config/home-manager/home.nix
+mv "$HOME/.config/home-manager/home.nix" "$HOME/.config/home-manager/home.nix.bak"
+ln -s "$HOME/projects/dotconfig/home-manager/home.nix" "$HOME/.config/home-manager/home.nix"
 
 home-manager switch
 ```
