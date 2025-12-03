@@ -1,34 +1,34 @@
 { config, pkgs, ... }:
 
 {
-  nixpkgs.config.allowUnfree = true;
-  nix = {
-    package = pkgs.nix;
-    settings.experimental-features = ["nix-command" "flakes"];
-  };
+  home.stateVersion = "25.11"; # Do not touch
 
   home.username = "ste";
   home.homeDirectory = "/home/${config.home.username}";
-  home.stateVersion = "24.05"; # Do not touch
 
   home.packages = [
-    pkgs.ansible
     pkgs.containerd
+    pkgs.dive
+    pkgs.docker
     pkgs.docker-buildx
     pkgs.docker-compose
-    pkgs.docker_27
+    pkgs.gh
     pkgs.jq
     pkgs.kind
+    pkgs.ko
     pkgs.kubectl
     pkgs.kubernetes-helm
-    pkgs.lychee
-    pkgs.terraform
-    pkgs.typos
+    pkgs.kustomize
     pkgs.unzip
-    pkgs.vault
     pkgs.wslu
     pkgs.yq-go
     pkgs.zsh-fzf-tab
+    # pkgs.ansible
+    # pkgs.lychee
+    # pkgs.open-policy-agent
+    # pkgs.terraform
+    # pkgs.typos
+    # pkgs.vault
 
     # (pkgs.writeShellScriptBin "my-hello" ''
     #   echo "Hello, ${config.home.username}!"
@@ -53,10 +53,10 @@
   home.sessionVariables = {
     BROWSER = "wslview";
     COLORTERM = "truecolor";
-    DISABLE_UPDATE_PROMPT = "true";
     EDITOR = "hx";
     MANPAGER = "bat -l man -p";
-    SSH_AUTH_SOCK="${config.home.homeDirectory}/.ssh/agent.sock";
+    HIST_STAMPS = "yyyy-mm-dd";
+    # SSH_AUTH_SOCK = "${config.home.homeDirectory}/.ssh/agent.sock"; # Sharing socket across shells
   };
   home.sessionPath = ["${config.home.homeDirectory}/.local/bin"];
 
@@ -66,38 +66,42 @@
       frequency = "weekly";
     };
     ssh-agent.enable = true;
-    syncthing.enable = true;
   };
 
   # Let Home Manager install and manage itself.
   programs = {
+    home-manager.enable = true;
     bun.enable = true;
     fd.enable = true;
-    home-manager.enable = true;
     ripgrep.enable = true;
     bat.enable = true;
-    go.enable = false;
+    go.enable = true;
+    cargo.enable = false;
   };
 
   programs.ssh = {
-    addKeysToAgent = "yes";
-    compression = true;
-    controlMaster = "auto";
-    controlPath = "~/.ssh/.sock-%C";
-    controlPersist = "10m";
     enable = true;
-    hashKnownHosts = false;
+    enableDefaultConfig = false;
+
     includes = ["~/.config.d/*"];
-    serverAliveCountMax = 3;
-    serverAliveInterval = 5;
-
     extraOptionOverrides = {
-      ConnectTimeout = "5";
-      StrictHostkeyChecking = "yes";
-      IdentitiesOnly = "yes";
+      strictHostkeyChecking = "yes";
+      connectTimeout = "5";
     };
-
     matchBlocks = {
+      "*" = {
+
+        hashKnownHosts = false;
+        addKeysToAgent = "yes";
+        identitiesOnly = true;
+
+        controlMaster = "auto";
+        controlPersist = "10m";
+        controlPath = "~/.ssh/.sock-%C";
+
+        serverAliveCountMax = 3;
+        serverAliveInterval = 5;
+      };
       server = {
         user = "ste";
         hostname = "remote.steff.tech";
@@ -114,10 +118,11 @@
     };
   };
 
+  # Remember to add '/home/ste/.nix-profile/bin/zsh' to /etc/shells before running `chsh -s /home/ste/.nix-profile/bin/zsh`
   programs.zsh = {
     enable = true;
 
-    initExtra = ''
+    initContent = ''
       PROMPT="%{$fg[cyan]%}%c%{$reset_color%} "'$(git_prompt_info)'"
       %(?:%{$fg[green]%}:%{$fg[red]%})> %{$reset_color%}"
       source ${pkgs.zsh-fzf-tab}/share/fzf-tab/fzf-tab.plugin.zsh
@@ -125,23 +130,33 @@
     history = {
       size = 20000;
       extended = true;
+      ignoreAllDups = true;
     };
     autosuggestion.enable = true;
     syntaxHighlighting.enable = true;
     oh-my-zsh = {
       enable = true;
       plugins = [
+        "fzf"
+        "git"
+        "golang"
+        "helm"
+        "kubectl"
+        "wd"
         # "ansible"
         # "bun"
         # "fluxcd"
-        "fzf"
-        "git"
-        "kubectl"
         # "ripgrep"
         # "rust"
         # "terraform"
-        "wd"
       ];
+
+      extraConfig = "
+# Update automatically without asking
+zstyle ':omz:update' mode auto
+# How often to auto-update (days).
+zstyle ':omz:update' frequency 30
+";
     };
     shellAliases = {
       grep = "grep --color=auto --exclude-dir={.bzr,CVS,.git,.hg,.svn,.idea,.tox,.vscode}";
@@ -161,11 +176,6 @@
       glr  = "git pull origin \"$(git rev-parse --abbrev-ref --short origin/HEAD)\" --rebase";
       grp  = "git remote update origin --prune";
       gstv = "git status -vv";
-
-      # Difftastic
-      # gd   = "GIT_EXTERNAL_DIFF=difft git diff";
-      # glgp = "GIT_EXTERNAL_DIFF=difft git log --stat --patch --ext-diff";
-      # gsh  = "GIT_EXTERNAL_DIFF=difft git show HEAD --ext-diff";
     };
   };
 
@@ -177,66 +187,129 @@
 
   programs.git = {
     enable = true;
-    userName = "ste";
-    userEmail = "steff.bpoulsen@gmail.com";
-
-    extraConfig = {
+    settings = {
+      user = {
+        name = "Steffen Baarsgaard";
+        email = "steff.bpoulsen@gmail.com";
+        signingkey = "~/.ssh/id_ed25519.pub";
+      };
       core = {
         editor = "hx";
-        excludesfile = "~/.gitignore";
-        hooksPath = "~/.githooks";
         autocrlf = "input";
         fileMode = false;
+        # hooksPath = "~/.config/git/hooks";
       };
-      gpg.format = "ssh";
-      merge.conflictstyle = "diff3";
-      http.sslverify = true;
+
+      # Ease of use
+      branch.autosetuprebase = "always";
       pull.rebase = true;
       push.default = "current";
-      rebase.autosquash = true;
+      fetch.prune = true;
+      rerere.enabled = true;
+      pager.branch = false;
+      rebase = {
+        autosquash = true;
+        updateRefs = true;
+      };
+
+      oh-my-zsh = {
+        hide-status = 1;
+        hide-dirty = 1;
+      };
     };
+
     signing = {
-      key = "~/.ssh/signing_ed25519";
+      format = "ssh";
+      key = "~/.ssh/id_ed25519";
       signByDefault = true;
     };
 
-    difftastic.enable = false;
-    delta = {
-      enable = true;
-      options = {
-        navigate = true;
-        features = "decorations";
-      };
+    ignores = [
+      ".env*"
+      ".helix/"
+      ".intellij/"
+      ".taplo.toml"
+      ".vscode/"
+    ];
+  };
+
+  programs.tmux = {
+    enable = true;
+    clock24 = true;
+
+    escapeTime = 20;
+    mouse = true;
+    # keyMode = "vi";
+
+    extraConfig = "
+# Open buffer into EDITOR, either screen height or full buffer (e/E)
+bind e run 'tmux capture-pane -S 0 -p -J > /tmp/tmux-$USER-edit && tmux new-window \"$EDITOR /tmp/tmux-$USER-edit\"'
+bind E run 'tmux capture-pane -S - -p -J > /tmp/tmux-$USER-edit && tmux new-window \"$EDITOR /tmp/tmux-$USER-edit\"'
+
+# vi like history/copy-mode
+set-window-option -g mode-keys vi
+bind-key -T copy-mode-vi v send -X begin-selection
+bind-key -T copy-mode-vi V send -X select-line
+
+# WSL2
+set -s copy-command 'clip.exe'
+bind-key -T copy-mode-vi y send -X copy-pipe-and-cancel 'clip.exe'
+
+# # Linux
+# set -s copy-command 'xclip -in -selection clipboard'
+# bind-key -T copy-mode-vi y send -X copy-pipe-and-cancel 'xclip -in -selection clipboard'
+
+# # Mac
+# set -s copy-command 'pbcopy'
+# bind-key -T copy-mode-vi y send -X copy-pipe-and-cancel 'pbcopy'
+";
+  };
+  programs.delta = {
+    enable = true;
+    enableGitIntegration = true;
+    options = {
+      navigate = true;
+      features = "decorations";
     };
   };
 
   programs.helix = {
     enable = true;
     defaultEditor = true;
+
     settings = {
-      theme = "onedark";
+      theme = "ayu_evolve";
       editor = {
+        auto-format = true;
         line-number = "relative";
         mouse = false;
         shell = ["bash" "-c"];
-        auto-format = true;
-        file-picker.hidden = false;
-        lsp = {
-          display-messages = true;
-          display-inlay-hints = true;
-          snippets = true;
-        };
-        indent-guides = {
-          render = true;
-          character = "╎";
-          skip-levels = 0;
-        };
+        end-of-line-diagnostics = "hint";
+        # rainbow-brackets = true;
+
         cursor-shape = {
           insert = "bar";
           normal = "block";
           select = "underline";
         };
+        file-picker.hidden = false;
+        inline-diagnostics.cursor-line = "error";
+        indent-guides = {
+          render = true;
+          character = "╎";
+          skip-levels = 0;
+        };
+        lsp = {
+          display-messages = true;
+          display-inlay-hints = true;
+          snippets = true;
+        };
+        # word-completion = {
+        #   enable = true;
+        #   trigger-length = 4;
+        # };
       };
+
       keys.normal."+" = {
         b = ":pipe base64 -d";
         j = [":pipe jq" ":set-language json" "collapse_selection"];
@@ -244,10 +317,13 @@
         # v = ":sh ansible-vault decrypt Ctrl+%" # Waiting for 3134
       };
     };
+
     languages = {
       language-server = {
-        ruff-lsp = {
-          command = "ruff-lsp";
+        regal = {
+          command = "regal";
+          args = ["language-server"];
+          config.provideFormatter = true;
         };
         rust-analyzer.config = {
           checkOnSave = true;
@@ -258,53 +334,43 @@
           reorder_keys = true;
           trailing_newline = true;
         };
-        terraform-ls.config = {
-          indexing.ignoreDirectoryNames = [".helix" ".vscode" ".idea"];
-          ignoreSingleFileWarning = true;
-          experimentalFeatures.prefillRequiredFields = true;
-        };
         yaml-language-server.config.yaml = {
           completion = true;
-          format.enable = true;
+          format.enable = false; # Removes newlines...
           hover = true;
           validation = true;
           schemas = {
-            "https://json.schemastore.org/github-workflow.json" = [".github/workflows/*.y*ml"];
+            # kubernetes = "*.y{a,}ml";
+            "https://json.schemastore.org/github-workflow.json" = [".github/workflows/*.y{a,}ml"];
+            "https://raw.githubusercontent.com/kyverno/chainsaw/main/.schemas/json/test-chainsaw-v1alpha1.json" = ["chainsaw-test.yaml"];
+            # "https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json" = ["*docker-compose*.y{a,}ml"];
           };
         };
       };
+
       language = [
-        {
-          name = "rust";
-          auto-format = true;
-          debugger = {
-            name = "codelldb";
-            command = "codelldb";
-            port-arg = "--port {}";
-            transport = "tcp";
-            templates = [{
-              name = "binary";
-              request = "launch";
-              completion = [{ completion = "filename"; name = "binary"; }];
-              args.program = "{0}";
-              args.runInTerminal = true;
-            }];
-          };
-        }
-        {
-          name = "markdown";
-          language-servers = ["markdown-oxide"];
-        }
-        {
-          name = "python";
-          language-servers = ["ruff-lsp"];
-        }
         {
           name = "bash";
           formatter = {
             command = "shfmt";
             args = ["-i" "2"];
           };
+        }
+        {
+          name = "go";
+          formatter.command = "gofmt";
+        }
+        {
+          name = "markdown";
+          language-servers = ["markdown-oxide"];
+        }
+        {
+          name = "rego";
+          indent = {
+            tab-width = 4;
+            unit = "\t";
+          };
+          language-servers = ["regal" "regols"];
         }
         {
           name = "toml";
@@ -315,27 +381,34 @@
         }
         {
           name = "yaml";
-          language-servers = ["yaml-language-server" "ansible-language-server"];
+          auto-format = false;
+          language-servers = ["yaml-language-server"];
+          # language-servers = ["yaml-language-server" "ansible-language-server"];
         }
       ];
     };
+
     extraPackages = [
-      pkgs.ansible-language-server
       pkgs.bash-language-server
-      pkgs.dockerfile-language-server-nodejs
+      pkgs.dockerfile-language-server
+      pkgs.golangci-lint-langserver
       pkgs.gopls
-      pkgs.helix-gpt # TODO https://github.com/leona/helix-gpt
       pkgs.helm-ls
       pkgs.markdown-oxide
       pkgs.nil
-      pkgs.nodePackages.vscode-json-languageserver
-      pkgs.ruff
-      pkgs.rustup
       pkgs.shellcheck
       pkgs.shfmt
+      pkgs.superhtml
       pkgs.taplo
-      pkgs.terraform-ls
       pkgs.yaml-language-server
+      # pkgs.ansible-language-server
+      # pkgs.regal
+      # pkgs.regols
+      # pkgs.ruff
+      # pkgs.rustup
+      # pkgs.systemd-lsp
+      # pkgs.terraform-ls
+      # pkgs.ty
     ];
   };
 }
