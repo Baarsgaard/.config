@@ -60,7 +60,12 @@
     HIST_STAMPS = "yyyy-mm-dd";
     # SSH_AUTH_SOCK = "${config.home.homeDirectory}/.ssh/agent.sock"; # Sharing socket across shells
   };
-  home.sessionPath = ["${config.home.homeDirectory}/.local/bin"];
+
+  home.sessionPath = [
+    "${config.home.homeDirectory}/.local/bin"
+    "/usr/local/go/bin"
+    "${config.home.homeDirectory}/go/bin"
+  ];
 
   services = {
     home-manager.autoUpgrade = {
@@ -77,8 +82,12 @@
     bun.enable = true;
     cargo.enable = false;
     fd.enable = true;
-    go.enable = true;
     ripgrep.enable = true;
+  };
+
+  programs.go = {
+    enable = true;
+    package = pkgs.emptyDirectory; # Updates too slow
   };
 
   programs.ssh = {
@@ -392,7 +401,7 @@ bind-key -T copy-mode-vi y send -X copy-pipe-and-cancel 'clip.exe'
     extraPackages = [
       pkgs.bash-language-server
       pkgs.dockerfile-language-server
-      pkgs.golangci-lint
+      # pkgs.golangci-lint
       pkgs.golangci-lint-langserver
       pkgs.gopls
       pkgs.helm-ls
@@ -400,7 +409,7 @@ bind-key -T copy-mode-vi y send -X copy-pipe-and-cancel 'clip.exe'
       pkgs.nil
       pkgs.shellcheck
       pkgs.shfmt
-      pkgs.superhtml
+      # pkgs.superhtml
       pkgs.taplo
       pkgs.yaml-language-server
       # pkgs.ansible-language-server
