@@ -11,7 +11,6 @@
   home.homeDirectory = "/home/${config.home.username}";
 
   home.packages = [
-    pkgs.dive
     pkgs.gcc
     pkgs.gh
     pkgs.gnumake
@@ -21,13 +20,16 @@
     pkgs.kubectl
     pkgs.kubernetes-helm
     pkgs.kustomize
+    pkgs.openssl
     pkgs.unzip
     pkgs.wslu
     pkgs.yq-go
     pkgs.zsh-fzf-tab
     # pkgs.ansible
+    # pkgs.dive
     # pkgs.lychee
     # pkgs.open-policy-agent
+    # pkgs.rustup
     # pkgs.terraform
     # pkgs.typos
     # pkgs.vault
@@ -416,7 +418,6 @@ bind-key -T copy-mode-vi y send -X copy-pipe-and-cancel 'clip.exe'
       # pkgs.regal
       # pkgs.regols
       # pkgs.ruff
-      # pkgs.rustup
       # pkgs.systemd-lsp
       # pkgs.terraform-ls
       # pkgs.ty
